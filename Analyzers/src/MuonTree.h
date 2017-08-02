@@ -74,8 +74,8 @@ public:
   Float_t pt;           
   Float_t eta;          
   Float_t phi;          
-  Float_t trkpt;         // pt of the track of the hlt muon [GeV]
-  Int_t   charge;         // pt of the track of the hlt muon [GeV]
+  Float_t trkpt;          // pt of the track of the hlt muon [GeV]
+  Int_t   charge;         
   
   Float_t ecalDep;
   Float_t hcalDep;
@@ -136,19 +136,19 @@ public:
   std::vector<std::string>  triggers;  
   std::vector<HLTObjCand>   objects;   
   double                    rho;
+  double                    rho_ecal;
+  double                    rho_hcal;
 
   HLTInfo(){};
   virtual ~HLTInfo(){};
   bool match( const std::string & path ) {
 	if (  std::find (  triggers.begin(), triggers.end(), path ) != triggers.end() )  return true;
-//     if (! iname.compare("HLT_Mu20_v1") == 0) continue;
 	return false;
   }
 
   bool find( const std::string & path ) {
 	for ( std::vector<std::string>::const_iterator it = triggers.begin(); it != triggers.end(); ++it ) {
       if ( it-> compare(path) == 0) return true;
-//       if ( it->find ( path ) != std::string::npos ) return true;
 	}
 	return false;
   }
