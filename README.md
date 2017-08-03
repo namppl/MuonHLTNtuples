@@ -1,11 +1,11 @@
 # MuonHLTNtuples
 
-cmsrel CMSSW_8_0_8_patch1  (-> update to the appropriate CMSSW version!)   
-cd CMSSW_8_0_8_patch1/src  
+cmsrel CMSSW_9_2_7  (-> update to the appropriate CMSSW version!)   
+cd CMSSW_9_2_7/src  
 cmsenv    
 git cms-addpkg HLTrigger/Configuration    
 git clone git@github.com:sarafiorendi/MuonHLTNtuples.git    
-cd MuonHLT/  
+cd MuonHLTNtuples/  
 git checkout -b YOUR_BRANCH_NAME  
 git merge origin/addL1info  
 cd ..  
