@@ -31,11 +31,20 @@ const int    minbin   =  0;
 const int    maxbin   = 80;
 const double muonmass =  0.10565837;
 
+float cut_pt_offline = 28.5;
+float cut_pt_online  = 27.0;
+
 TH1F * tagiso                  = new TH1F("tagiso"                   ,"tagiso"                        ,  100,      0,    1  );
+TH1F * HNVtx                   = new TH1F("HNVtx"                    ,"NVtx"                          ,nbins, minbin, maxbin);
 
 TH1F * HMeanRhoVsNVtx          = new TH1F("HMeanRhoVsNVtx"           ,"MeanRhoVsNVtx"                 ,nbins, minbin, maxbin);
+TH1F * HMeanRhoECALVsNVtx      = new TH1F("HMeanRhoECALVsNVtx"       ,"MeanRhoECALVsNVtx"             ,nbins, minbin, maxbin);
+TH1F * HMeanRhoHCALVsNVtx      = new TH1F("HMeanRhoHCALVsNVtx"       ,"MeanRhoHCALVsNVtx"             ,nbins, minbin, maxbin);
+
 TH1F * HRhoVsNVtx              = new TH1F("HRhoVsNVtx"               ,"RhoVsNVtx"                     ,nbins, minbin, maxbin);
-TH1F * HNVtx                   = new TH1F("HNVtx"                    ,"NVtx"                          ,nbins, minbin, maxbin);
+TH1F * HRhoECALVsNVtx          = new TH1F("HRhoECALVsNVtx"           ,"RhoECALVsNVtx"                 ,nbins, minbin, maxbin);
+TH1F * HRhoHCALVsNVtx          = new TH1F("HRhoHCALVsNVtx"           ,"RhoHCALVsNVtx"                 ,nbins, minbin, maxbin);
+
  
 TH1F * HMeanECalIsoVsNVtx      = new TH1F("HMeanECalIsoVsNVtx"       ,"MeanECalIsoVsNVtx"             ,nbins, minbin, maxbin);
 TH1F * HMeanHCalIsoVsNVtx      = new TH1F("HMeanHCalIsoVsNVtx"       ,"MeanHCalIsoVsNVtx"             ,nbins, minbin, maxbin);
@@ -58,17 +67,13 @@ TH1F * HNVtxForIso_eta1        = new TH1F("HNVtxForIso_eta1"         ,"NVtx for 
 TH2F * HNVtxECalDep_barrel     = new TH2F("HNVtxECalDep_barrel"      ,"NVtx vs ECal corrected dep bar" ,nbins, minbin, maxbin, 200, -10, 10);
 TH2F * HNVtxECalDep_endcap     = new TH2F("HNVtxECalDep_endcap"      ,"NVtx vs ECal corrected dep end" ,nbins, minbin, maxbin, 200, -10, 10);
 
-// HNVtxECalDep_barrel -> GetXaxis() -> SetTitle("Nvtx");
-// HNVtxECalDep_barrel -> GetYaxis() -> SetTitle("rho corrected ECal deposits");
-// HNVtxECalDep_endcap -> GetXaxis() -> SetTitle("Nvtx");
-// HNVtxECalDep_endcap -> GetYaxis() -> SetTitle("rho corrected ECal deposits");
 
 void evalEffAreaData(){
 
-  TFile* inputfile = TFile::Open("muonNtuples_274157_isolation.root","READ");
+  TFile* inputfile = TFile::Open("muonNtuple_332.root","READ");
   std::cout << "input file: " << inputfile -> GetName() << std::endl;
 
-  TFile* outfile = TFile::Open("effArea_sum.root","RECREATE");
+  TFile* outfile = TFile::Open("effArea.root","RECREATE");
   std::cout << "output file: " << outfile -> GetName() << std::endl;
   
   
@@ -100,41 +105,42 @@ void evalEffAreaData(){
 
     unsigned int nhltmuons = ev->hltmuons.size();
     
-    if (!ev-> hltTag.find("HLT_Mu20_v2")) continue;
+    if (!ev-> hltTag.find("HLT_IsoMu27_v11")) continue;
 
     for (int imu = 0; imu < nmuons; imu++){
       
       // select the tag muon        
       if (! selectTagMuon(ev -> muons.at(imu), tagiso)) continue;
-      if (! matchMuon(ev -> muons.at(imu), ev -> hlt.objects, "hltL3fL1sMu18L1f0L2f10QL3Filtered20Q::TEST")) continue;
-//       tagMuonPt -> Fill(ev -> muons.at(imu).pt);
+      if (! matchMuon(ev -> muons.at(imu), ev -> hlt.objects, "hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07::REHLT")) continue;
       
       for (int jmu = 0; jmu < nmuons; jmu++){
         // select the probe muon
         if (! selectProbeMuon(ev -> muons.at(jmu), ev -> muons.at(imu), dimuon_mass)) continue;
-        HRhoVsNVtx -> Fill(ev -> nVtx, ev -> hlt.rho);
-        HNVtx      -> Fill(ev -> nVtx);
+        HRhoVsNVtx     -> Fill(ev -> nVtx, ev -> hlt.rho);
+        HRhoECALVsNVtx -> Fill(ev -> nVtx, ev -> hlt.rho_ecal);
+        HRhoHCALVsNVtx -> Fill(ev -> nVtx, ev -> hlt.rho_hcal);
+        HNVtx          -> Fill(ev -> nVtx);
 
-        if (matchMuon(ev -> muons.at(jmu), ev -> hlt.objects, "hltL3fL1sMu18L1f0L2f10QL3Filtered20Q::TEST")){
+        if (matchMuon(ev -> muons.at(jmu), ev -> hlt.objects, "hltL3fL1sMu22Or25L1f0L2f10QL3Filtered27Q::REHLT")){
           HNVtxForIso-> Fill(ev -> nVtx);
           HLTMuonCand theL3 = matchL3(ev -> muons.at(jmu), ev -> hltmuons);
           if (theL3.pt == -1000) {std::cout << "no L3 found" << std::endl; continue;}
-          if (theL3.pt < 22    ) continue;
+          if (theL3.pt < cut_pt_online    ) continue;
           
-		  HECalIsoVsNVtx -> Fill(ev -> nVtx, theL3.ecalDep05);
-		  HHCalIsoVsNVtx -> Fill(ev -> nVtx, theL3.hcalDep1);
+		  HECalIsoVsNVtx -> Fill(ev -> nVtx, theL3.ecalDep);
+		  HHCalIsoVsNVtx -> Fill(ev -> nVtx, theL3.hcalDep);
 
 		  if (fabs(ev -> muons.at(jmu).eta) <= 1.479) {
-		    HECalIsoVsNVtx_eta0 -> Fill( ev -> nVtx, theL3.ecalDep05 );
-		    HHCalIsoVsNVtx_eta0 -> Fill( ev -> nVtx, theL3.hcalDep1  );
+		    HECalIsoVsNVtx_eta0 -> Fill( ev -> nVtx, theL3.ecalDep );
+		    HHCalIsoVsNVtx_eta0 -> Fill( ev -> nVtx, theL3.hcalDep  );
 		    HNVtxForIso_eta0    -> Fill( ev -> nVtx);
-		    HNVtxECalDep_barrel -> Fill( ev -> nVtx, theL3.ecalDep05 - ev -> hlt.rho*0.153);
+		    HNVtxECalDep_barrel -> Fill( ev -> nVtx, theL3.ecalDep - ev -> hlt.rho*0.153);
 		  }
 		  else { 
-			HECalIsoVsNVtx_eta1 -> Fill( ev -> nVtx, theL3.ecalDep05 );
-			HHCalIsoVsNVtx_eta1 -> Fill( ev -> nVtx, theL3.hcalDep1  );
+			HECalIsoVsNVtx_eta1 -> Fill( ev -> nVtx, theL3.ecalDep );
+			HHCalIsoVsNVtx_eta1 -> Fill( ev -> nVtx, theL3.hcalDep  );
 			HNVtxForIso_eta1    -> Fill( ev -> nVtx);
-		    HNVtxECalDep_endcap -> Fill( ev -> nVtx, theL3.ecalDep05 - ev -> hlt.rho*0.071);
+		    HNVtxECalDep_endcap -> Fill( ev -> nVtx, theL3.ecalDep - ev -> hlt.rho*0.071);
 		  }
 
         }
@@ -155,6 +161,8 @@ void evalEffAreaData(){
   HNVtxECalDep_endcap     -> Write();
   
   HMeanRhoVsNVtx          -> Write();
+  HMeanRhoECALVsNVtx      -> Write();
+  HMeanRhoHCALVsNVtx      -> Write();
   HRhoVsNVtx              -> Write();
   HNVtx                   -> Write();
 
@@ -208,7 +216,7 @@ bool matchMuon(MuonCand mu, std::vector<HLTObjCand> toc, std::string tagFilterNa
 
 bool selectTagMuon(MuonCand mu, TH1F* tagiso){
   
-  if (!( mu.pt         > 22  )) return false; 
+  if (!( mu.pt         > cut_pt_offline  )) return false; 
   if (!( fabs(mu.eta)  < 2.4 )) return false; 
   if (!( mu.isTight    == 1  )) return false; 
   
@@ -230,7 +238,7 @@ bool selectProbeMuon(MuonCand mu, MuonCand tagMu, TH1F* dimuon_mass){
       mu.pt == tagMu.phi ) 
     return false;
   
-  if (!( mu.pt         > 22  )) return false; 
+  if (!( mu.pt         > cut_pt_offline  )) return false; 
   if (!( fabs(mu.eta)  < 2.4 )) return false; 
   if (!( mu.isTight    == 1  )) return false; 
   
@@ -280,6 +288,8 @@ void dofit(){
   gStyle->SetOptFit(1111);
 
   pair<float, float> a_pair        = doReallyFit( HRhoVsNVtx, HNVtx, HMeanRhoVsNVtx, minF, maxF, "NVtx", "<#rho>" );
+  pair<float, float> a_ecal_pair   = doReallyFit( HRhoECALVsNVtx, HNVtx, HMeanRhoECALVsNVtx, minF, maxF, "NVtx", "<#rho>" );
+  pair<float, float> a_hcal_pair   = doReallyFit( HRhoHCALVsNVtx, HNVtx, HMeanRhoHCALVsNVtx, minF, maxF, "NVtx", "<#rho>" );
   
   pair<float, float> k_ecal        = doReallyFit( HECalIsoVsNVtx     , HNVtxForIso     , HMeanECalIsoVsNVtx     , minF, maxF, "NVtx", "<ecal iso>" );
   pair<float, float> k_ecal_barrel = doReallyFit( HECalIsoVsNVtx_eta0, HNVtxForIso_eta0, HMeanECalIsoVsNVtx_eta0, minF, maxF, "NVtx", "<ecal iso>" );
@@ -291,12 +301,21 @@ void dofit(){
 
   HMeanECalIsoVsNVtx -> Draw();
   
+  // up to 2016
   calcEffArea(a_pair, k_ecal       , "ecal: whole range: " );
   calcEffArea(a_pair, k_ecal_barrel, "ecal: barrel     : " );
   calcEffArea(a_pair, k_ecal_endcap, "ecal: endcap     : " );
   calcEffArea(a_pair, k_hcal       , "hcal: whole range: " );
   calcEffArea(a_pair, k_hcal_barrel, "hcal: barrel     : " );
   calcEffArea(a_pair, k_hcal_endcap, "hcal: endcap     : " );
+
+  // for 2017
+  calcEffArea(a_ecal_pair, k_ecal       , "ecal rho_ecal: whole range: " );
+  calcEffArea(a_ecal_pair, k_ecal_barrel, "ecal rho_ecal: barrel     : " );
+  calcEffArea(a_ecal_pair, k_ecal_endcap, "ecal rho_ecal: endcap     : " );
+  calcEffArea(a_hcal_pair, k_hcal       , "hcal rho_hcal: whole range: " );
+  calcEffArea(a_hcal_pair, k_hcal_barrel, "hcal rho_hcal: barrel     : " );
+  calcEffArea(a_hcal_pair, k_hcal_endcap, "hcal rho_hcal: endcap     : " );
 
 }
 
