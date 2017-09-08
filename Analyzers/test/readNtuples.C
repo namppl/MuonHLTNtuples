@@ -210,9 +210,9 @@ bool selectTagMuon(MuonCand mu, TH1F* tagiso){
 
 bool selectProbeMuon(MuonCand mu, MuonCand tagMu, TH1F* dimuon_mass){
   
-  if (mu.pt == tagMu.pt  && 
-      mu.pt == tagMu.eta &&
-      mu.pt == tagMu.phi ) 
+  if (mu.pt  == tagMu.pt  && 
+      mu.eta == tagMu.eta &&
+      mu.phi == tagMu.phi ) 
     return false;
   
   if (!( mu.pt         > 22  )) return false; 
