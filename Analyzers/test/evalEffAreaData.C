@@ -249,7 +249,7 @@ bool selectProbeMuon(MuonCand mu, MuonCand tagMu, TH1F* dimuon_mass){
   mu2.SetPtEtaPhiM (tagMu.pt, tagMu.eta, tagMu.phi, muonmass);
   double mumumass = (mu1 + mu2).M();
   dimuon_mass -> Fill(mumumass);
-//   if (! (mumumass > 86. && mumumass < 96. )) return false;
+  if (! (mumumass > 86. && mumumass < 96. )) return false;
   
   return true;
 }
