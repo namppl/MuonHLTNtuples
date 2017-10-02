@@ -65,6 +65,7 @@ class MuonNtuples : public edm::EDAnalyzer {
                const edm::Handle<trigger::TriggerEvent> &,
                const edm::TriggerNames &,
                const edm::Event &,
+               const edm::EventSetup &,
                bool 
               );
   
@@ -157,6 +158,9 @@ class MuonNtuples : public edm::EDAnalyzer {
   
   unsigned int nGoodVtx; 
 
+  std::string pathNameHLTPhysics_;
+  std::string processName_;
+  HLTPrescaleProvider hltPrescaleProvider_;
 
 };
 
@@ -220,7 +224,11 @@ MuonNtuples::MuonNtuples(const edm::ParameterSet& cfg):
   genTag_                 (cfg.getUntrackedParameter<edm::InputTag>("genParticlesTag")),
     genToken_               (consumes<reco::GenParticleCollection>(genTag_)), 
 
-  doOffline_                 (cfg.getUntrackedParameter<bool>("doOffline"))
+  doOffline_                 (cfg.getUntrackedParameter<bool>("doOffline")),
+
+  pathNameHLTPhysics_ (cfg.getUntrackedParameter<std::string>("pathNameHLTPhysics")),
+  processName_ (cfg.getUntrackedParameter<std::string>("processName")),
+  hltPrescaleProvider_(cfg, consumesCollector(), *this)
 {
 }
 
@@ -234,7 +242,27 @@ void MuonNtuples::beginJob() {
 
 void MuonNtuples::endJob() {}
 
-void MuonNtuples::beginRun(const edm::Run & run, const edm::EventSetup & eventSetup) {}
+void MuonNtuples::beginRun(const edm::Run & run, const edm::EventSetup & eventSetup)
+{
+  bool changed{true};
+  if (hltPrescaleProvider_.init(run, eventSetup, processName_, changed))
+  {
+    // if init returns TRUE, initialisation has succeeded!
+    if (changed)
+    {
+      // The HLT config has actually changed wrt the previous Run, hence rebook your
+      // histograms or do anything else dependent on the revised HLT config
+      std::cout << "Initalizing HLTConfigProvider"  << std::endl;
+    }
+  }
+  else
+  {
+    // if init returns FALSE, initialisation has NOT succeeded, which indicates a problem
+    // with the file and/or code and needs to be investigated!
+    std::cout << " HLT config extraction failure with process name " << processName_ << std::endl;
+    // In this case, all access methods will return empty values!
+  }
+}
 
 void MuonNtuples::endRun  (const edm::Run & run, const edm::EventSetup & eventSetup) {}
  
@@ -247,6 +275,7 @@ void MuonNtuples::analyze (const edm::Event &event, const edm::EventSetup &event
   event_.luminosityBlockNumber = event.id().luminosityBlock();
   event_.eventNumber           = event.id().event();
 
+  event_.prescaleHLTPhysics = hltPrescaleProvider_.prescaleValue(event, eventSetup, pathNameHLTPhysics_);
 
   // Fill vertex info
   if (doOffline_){
@@ -317,7 +346,7 @@ void MuonNtuples::analyze (const edm::Event &event, const edm::EventSetup &event
       event.getByToken(triggerSummToken_  , triggerEvent)) {
       
     edm::TriggerNames triggerNames_ = event.triggerNames(*triggerResults);
-    fillHlt(triggerResults, triggerEvent, triggerNames_, event, false);
+    fillHlt(triggerResults, triggerEvent, triggerNames_, event, eventSetup, false);
   }
   else 
     edm::LogError("") << "Trigger collection for probe muon not found !!!";
@@ -330,7 +359,7 @@ void MuonNtuples::analyze (const edm::Event &event, const edm::EventSetup &event
       event.getByToken(tagTriggerSummToken_  , tagTriggerEvent)) {
       
     edm::TriggerNames tagTriggerNames_ = event.triggerNames(*tagTriggerResults);
-    fillHlt(tagTriggerResults, tagTriggerEvent, tagTriggerNames_, event, true);
+    fillHlt(tagTriggerResults, tagTriggerEvent, tagTriggerNames_, event, eventSetup, true);
   }
   else 
     edm::LogError("") << "Trigger collection for tag muon not found !!!";
@@ -424,6 +453,7 @@ void MuonNtuples::fillHlt(const edm::Handle<edm::TriggerResults>   & triggerResu
                           const edm::Handle<trigger::TriggerEvent> & triggerEvent  ,
                           const edm::TriggerNames                  & triggerNames  ,
                           const edm::Event                         & event         ,
+                          const edm::EventSetup                    &eventSetup     ,
                           bool                                       isTag         )
 {    
    
@@ -442,8 +472,14 @@ void MuonNtuples::fillHlt(const edm::Handle<edm::TriggerResults>   & triggerResu
            pathName.find ("HLT_Mu17"   ) !=std::string::npos ||
            pathName.find ("HLT_Mu8_T"  ) !=std::string::npos 
       ){
-        if (isTag) event_.hltTag.triggers.push_back(pathName);
-        else       event_.hlt   .triggers.push_back(pathName);
+        if (isTag)
+        {
+          event_.hltTag.triggers.push_back(pathName);
+        }
+        else
+        {
+          event_.hlt.triggers.push_back(pathName);
+        }
       }
     }
   }

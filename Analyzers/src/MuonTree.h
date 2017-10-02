@@ -6,8 +6,6 @@
 #include <vector>
 #include <string>
 
-
-
 class GenParticleCand {
 public:
   Int_t   pdgId; 
@@ -25,12 +23,8 @@ public:
   ClassDef(GenParticleCand,1)
 };
 
-
-
-
 class MuonCand {
 public:
-
   Float_t pt;  
   Float_t eta; 
   Float_t phi; 
@@ -70,7 +64,6 @@ public:
 
 class HLTMuonCand {
 public:
-
   Float_t pt;           
   Float_t eta;          
   Float_t phi;          
@@ -90,13 +83,10 @@ public:
   virtual ~HLTMuonCand(){};
 
   ClassDef(HLTMuonCand,1)
-
 };
-
 
 class L1MuonCand {
 public:
-
   Float_t pt;           
   Float_t eta;          
   Float_t phi;          
@@ -110,11 +100,8 @@ public:
 
 };
 
-
-
 class HLTObjCand {
 public:
-
   std::string filterTag; // name of filter passed by the object
   Float_t pt;            // pt of the object passing the filter [GeV]
   Float_t eta;           // eta of the object passing the filter
@@ -124,12 +111,7 @@ public:
   virtual ~HLTObjCand(){};
 
   ClassDef(HLTObjCand,1)
-
 };
-
-
-
-
 
 class HLTInfo {
 public:
@@ -154,13 +136,11 @@ public:
   }
 
   ClassDef(HLTInfo,1)
-
 };
 
 
 class MuonEvent {
 public:
-
   Int_t   runNumber;             
   Int_t   luminosityBlockNumber; 
   Int_t   eventNumber;           
@@ -182,14 +162,15 @@ public:
   std::vector <HLTMuonCand>     L2muons;      
   std::vector <L1MuonCand>      L1muons;      
   HLTInfo                       hlt;           
-  HLTInfo                       hltTag;            
+  HLTInfo                       hltTag;   
+
+  Int_t prescaleHLTPhysics;         
 
   MuonEvent(){};
   virtual ~MuonEvent(){};
 
   ClassDef(MuonEvent,1)
 };
-
 
 #endif
 
